@@ -125,6 +125,7 @@ Optional:
 
 - `make base` runs the baseline HLS-to-Vivado flow without the RealProbe instrumentation path.
 - `make realprobe RUN_COSIM=1` enables HLS co-simulation. This repository has now been validated with `RUN_COSIM=1` on Linux Vitis HLS 2023.1 using `XSIM`, but it requires the `zip` utility to be installed on the system.
+- `rapidwright_realprobe_inserter/` contains a parameterized RapidWright checkpoint inserter for cases where you want to inject RealProbe into existing DCPs instead of rerunning the normal RealProbe HLS flow. Its wrapper now defaults to a 2-stage RapidWright-plus-Vivado path that emits a normal final DCP.
 
 <!---
 All available command-line options can be viewed by running `realprobe --help`.

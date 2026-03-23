@@ -23,3 +23,10 @@ rpp_demo1/xcd.log
 
 realprobe/vivado.tcl
 realprobe/basic_vivado.tcl
+
+rapidwright_realprobe_inserter/build/
+rapidwright_realprobe_inserter/output/
+rapidwright_realprobe_inserter/*.class
+rapidwright_realprobe_inserter/*.dcp
+rapidwright_realprobe_inserter/*.edf
+rapidwright_realprobe_inserter_ref/
