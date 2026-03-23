@@ -3,6 +3,7 @@ package require tdom
 
 rename csynth_design original_csynth_design
 rename export_design original_export_design
+rename cosim_design original_cosim_design
 
 set RP_PATH $arg1 
 set BUILD_PATH $arg2 
@@ -23,6 +24,47 @@ proc export_design {args} {
 
     original_export_design -format ip_catalog
     run_rp $RP_PATH
+}
+
+proc filter_ld_library_path {ldPath} {
+    set filtered {}
+    foreach entry [split $ldPath ":"] {
+        if {$entry eq ""} {
+            continue
+        }
+        if {[string match "*/Vitis_HLS/*/lib/lnx64.o/*" $entry]} {
+            continue
+        }
+        lappend filtered $entry
+    }
+    return [join $filtered ":"]
+}
+
+proc cosim_design {args} {
+    global BUILD_PATH
+    set hadLdPath [info exists ::env(LD_LIBRARY_PATH)]
+    if {$hadLdPath} {
+        set originalLdPath $::env(LD_LIBRARY_PATH)
+        set filteredLdPath [filter_ld_library_path $originalLdPath]
+        set localRuntimeLibPath [file normalize [file join [pwd] ".linux-hls-libs"]]
+        if {[file isdirectory $localRuntimeLibPath]} {
+            set ::env(LD_LIBRARY_PATH) "${localRuntimeLibPath}:$filteredLdPath"
+        } else {
+            set ::env(LD_LIBRARY_PATH) $filteredLdPath
+        }
+    }
+
+    set cmd [linsert $args 0 original_cosim_design]
+    set status [catch {uplevel 1 $cmd} result options]
+
+    if {$hadLdPath} {
+        set ::env(LD_LIBRARY_PATH) $originalLdPath
+    }
+
+    if {$status} {
+        return -options $options $result
+    }
+    return $result
 }
 
 

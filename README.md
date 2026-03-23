@@ -55,18 +55,18 @@ cd RealProbe
 >
 > Please note that the name of the tcl script should be hls.tcl, and don't change the variable name inside. For more information, refer examples folder for tcl script examples.
 
-In your Makefile, specify the path to your git repository
+In your Makefile, specify the path to your RealProbe checkout and the installed Linux Vitis HLS frontend:
 
 ```bash
 REALPROBE_PATH := <YOUR/GIT/CLONED/PATH>/realprobe
-HLS_BUILD_PATH := <YOUR/GIT/CLONED/PATH>/hls-build
+HLS_BUILD_PATH := /path/to/Xilinx/Vitis_HLS/2023.1/lnx64/tools/clang-3.9-csynth
 ```
 
 Go to your project folder (with C/C++ codes and Vitis_HLS run tcl script) and copy the Makefile from RealProbe.
 
 
 ```bash
-cp RealProbe/realprobe/Makefile .
+cp /path/to/RealProbe/realprobe/Makefile .
 ```
 
 Then, run RealProbe!

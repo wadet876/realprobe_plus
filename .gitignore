@@ -9,8 +9,11 @@
 .cache/
 
 rpp_demo1/.hls.failed
+rpp_demo1/.linux-hls-libs/
 rpp_demo1/.rp_hls.tcl
+rpp_demo1/.rp_hls_test.tcl
 rpp_demo1/.tmp.tcl
+rpp_demo1/file*
 rpp_demo1/FPGA/
 rpp_demo1/project/
 rpp_demo1/vivado/

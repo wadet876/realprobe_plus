@@ -100,11 +100,23 @@ proc generateCompileTcl {hlsPath} {
     set compileTclPath "${PRJ_NAME}/${SOL_NAME}/rprobe/vivado.tcl"
 
     set file [open $compileTclPath "w"]
+    puts $file {
+proc rp_to_linux_path {path} {
+    if {[regexp {^([A-Za-z]):/(.*)$} $path -> drive rest]} {
+        set drive [string tolower $drive]
+        regsub -all {\\} $rest {/} rest
+        return "/mnt/$drive/$rest"
+    }
+    return $path
+}
+    }
     puts $file "set prjname $prjname"
     puts $file "set userIP $userIP"
     puts $file "set partname $TARGET_DEV"
-    puts $file "set boardspath $boardsPynqz2Path"
-    puts $file "set solpath $solPath"
+    puts $file "set boardspath_raw {$boardsPynqz2Path}"
+    puts $file "set solpath_raw {$solPath}"
+    puts $file "set boardspath \[rp_to_linux_path \$boardspath_raw\]"
+    puts $file "set solpath \[rp_to_linux_path \$solpath_raw\]"
     puts $file "set num_maxi $numMaxi"
     puts $file "set num_saxi $numSaxi"
     for {set i 0} {$i < $numMaxi} {incr i} {
@@ -126,19 +138,18 @@ set scripts_vivado_version 2023.1
 set current_vivado_version [version -short]
 if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 puts ""
-catch {common::send_gid_msg -ssname BD::TCL -id 2041 -severity "ERROR" "This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."}
-return 1
+catch {common::send_gid_msg -ssname BD::TCL -id 2041 -severity "WARNING" "This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Continuing anyway."}
 }
     }
     puts $file "\n"
-    puts $file "create_project $prjname . -part {$TARGET_DEV}"
+    puts $file "create_project -force $prjname . -part {$TARGET_DEV}"
     puts $file "current_project $prjname"
     puts $file "create_bd_design \"design_1\""
     puts $file "set_property source_mgmt_mode All \[current_project\]"
 
     set realprobeFound [file exists [file join $solPath ".autopilot/db" "realprobe_found.txt"]]
     if {$realprobeFound} {
-        puts $file "add_files -norecurse \[file join $solPath rprobe realprobe_ip.v\]"
+        puts $file "add_files -norecurse \[file join \$solpath rprobe realprobe_ip.v\]"
     }
     # puts $file "set_property AUTO_INCREMENTAL_CHECKPOINT.DIRECTORY $boardsPynqz2Path/$prjname.srcs/utils_1/imports/impl_1 \[get_runs impl_1\]"
 
@@ -146,7 +157,7 @@ return 1
     puts $file "startgroup"
     puts $file "create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0"
     puts $file "endgroup"
-    puts $file "set_property ip_repo_paths $solPath \[current_project\]"
+    puts $file "set_property ip_repo_paths \$solpath \[current_project\]"
     puts $file "update_ip_catalog"
     puts $file "startgroup"
     puts $file "create_bd_cell -type ip -vlnv xilinx.com:hls:$userIP:1.0 ${userIP}_0"
@@ -214,12 +225,12 @@ return 1
     puts $file "regenerate_bd_layout"
     puts $file "save_bd_design"
     puts $file "validate_bd_design"
-    puts $file "make_wrapper -files \[get_files $boardsPynqz2Path/$prjname.srcs/sources_1/bd/design_1/design_1.bd\] -top"
-    puts $file "add_files -norecurse $boardsPynqz2Path/$prjname.gen/sources_1/bd/design_1/hdl/design_1_wrapper.v"
+    puts $file "make_wrapper -files \[get_files \[file join \$boardspath \$prjname.srcs sources_1 bd design_1 design_1.bd\]\] -top"
+    puts $file "add_files -norecurse \[file join \$boardspath \$prjname.gen sources_1 bd design_1 hdl design_1_wrapper.v\]"
     puts $file "update_compile_order -fileset sources_1"
     puts $file "set_property top design_1_wrapper \[current_fileset\]"
     puts $file "update_compile_order -fileset sources_1"
-    puts $file "set_property AUTO_INCREMENTAL_CHECKPOINT.DIRECTORY $boardsPynqz2Path/$prjname.srcs/utils_1/imports/impl_1 \[get_runs impl_1\]"
+    puts $file "set_property AUTO_INCREMENTAL_CHECKPOINT.DIRECTORY \[file join \$boardspath \$prjname.srcs utils_1 imports impl_1\] \[get_runs impl_1\]"
 
     puts $file "reset_runs synth_1"
     puts $file "launch_runs impl_1 -to_step write_bitstream -jobs 4"
@@ -227,7 +238,15 @@ return 1
 
 
     puts $file "open_run impl_1"
+    puts $file "#added"
+    puts $file "write_checkpoint -force design_1_wrapper_routed.dcp"
     puts $file "report_utilization -hierarchical -file ./rpt_util.txt"
+    puts $file "#added"
+    puts $file "set realprobe_ip_dcp \[file join \$boardspath \$prjname.runs design_1_realprobe_ip_0_0_synth_1 design_1_realprobe_ip_0_0.dcp\]"
+    puts $file "if {\[file exists \$realprobe_ip_dcp\]} { file copy -force \$realprobe_ip_dcp \[file join \[pwd\] design_1_realprobe_ip_0_0.dcp\] } else { puts \"WARNING: Missing RealProbe IP DCP at \$realprobe_ip_dcp\" }"
+    puts $file "#added"
+    puts $file "set axi_bram_ctrl_dcp \[file join \$boardspath \$prjname.runs design_1_axi_bram_ctrl_0_0_synth_1 design_1_axi_bram_ctrl_0_0.dcp\]"
+    puts $file "if {\[file exists \$axi_bram_ctrl_dcp\]} { file copy -force \$axi_bram_ctrl_dcp \[file join \[pwd\] design_1_axi_bram_ctrl_0_0.dcp\] } else { puts \"WARNING: Missing AXI BRAM Ctrl DCP at \$axi_bram_ctrl_dcp\" }"
 
     puts $file "close_project"
     puts $file "exit"

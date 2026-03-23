@@ -40,6 +40,102 @@ proc prepend_to_file {filename content} {
     }
 }
 
+proc extract_signal_name {line} {
+    set trimmed [string trim $line]
+    if {$trimmed eq ""} {
+        return ""
+    }
+
+    set lhs [lindex [split $trimmed "="] 0]
+    set lhs [string trim $lhs " \t,;"]
+    set tokens [regexp -all -inline {\S+} $lhs]
+    if {[llength $tokens] == 0} {
+        return ""
+    }
+
+    return [string trim [lindex $tokens end] " \t,;"]
+}
+
+proc signal_line_kind {line} {
+    set trimmed [string trim $line]
+    if {$trimmed eq ""} {
+        return ""
+    }
+
+    if {[string match "output *" $trimmed]} {
+        return "output"
+    }
+    if {[string match "wire *" $trimmed]} {
+        return "wire"
+    }
+    if {[string match "reg *" $trimmed]} {
+        return "reg"
+    }
+    if {[string index $trimmed 0] eq "."} {
+        return "fcall"
+    }
+    if {[string match "*,*" $trimmed] || [string match "*," $trimmed]} {
+        return "port"
+    }
+
+    return "other"
+}
+
+proc signal_declared_in_content {content line signalName} {
+    set lineKind [signal_line_kind $line]
+    if {$lineKind eq "" || $signalName eq ""} {
+        return 0
+    }
+
+    foreach contentLine [split $content "\n"] {
+        set trimmed [string trim $contentLine]
+        if {$trimmed eq ""} {
+            continue
+        }
+
+        if {[extract_signal_name $trimmed] ne $signalName} {
+            continue
+        }
+
+        set contentKind [signal_line_kind $trimmed]
+
+        if {$lineKind eq "port"} {
+            if {$contentKind eq "port"} {
+                return 1
+            }
+            continue
+        }
+
+        if {$contentKind eq $lineKind} {
+            return 1
+        }
+    }
+
+    return 0
+}
+
+proc merge_unique_signal_lines {existingContent newContent} {
+    set mergedLines {}
+    set seenContent $existingContent
+
+    foreach rawLine [split $newContent "\n"] {
+        set line [string trimright $rawLine]
+        set signalName [extract_signal_name $line]
+        if {$signalName eq ""} {
+            continue
+        }
+
+        if {[signal_declared_in_content $seenContent $line $signalName]} {
+            continue
+        }
+
+        lappend mergedLines $line
+        append seenContent "\n$line"
+    }
+
+    return [join $mergedLines "\n"]
+}
+
 foreach line $lines {
     set line [string trim $line]
     if {[string length $line] > 0} {
@@ -103,7 +199,7 @@ foreach line $lines {
 
             if {[file exists $apdoneFileName]} {
                 set apdoneContent [read [open $apdoneFileName r]]
-                if {![regexp {\bap_done\b} $apdoneContent]} {
+                if {![regexp {\bap_done_out\b} $apdoneContent]} {
                     # Update the port file (prepend ap_done_out,)
                     if {[file exists $topPortFileName]} {
                         prepend_to_file $topPortFileName "ap_done_out,"
@@ -125,7 +221,7 @@ foreach line $lines {
                         puts "Could not add ap_done signal to output information because txt file not found for top module $topModule."
                     }
                 } else {
-                   puts "ap_done found in $apdoneFileName. Skipping updates to other files."
+                   puts "ap_done_out found in $apdoneFileName. Skipping updates to other files."
                 }
             } else {
                 # puts "apdone_signals.txt not found. Skipping updates to other files."
@@ -185,10 +281,11 @@ foreach line $lines {
                 error "Insertion point not found in the output file."
             }
 
-            set lines [split $inputFileContent "\n"]
+            set filteredInputContent [merge_unique_signal_lines $outputFileContent $inputFileContent]
+            set lines [split $filteredInputContent "\n"]
             set insertionEnd [string first "\n" $outputFileContent $index]
 
-            if {[string first [join $lines "\n"] [string range $outputFileContent $insertionEnd end]] == -1} {
+            if {$filteredInputContent ne ""} {
                 set updatedContent [string range $outputFileContent 0 $insertionEnd]
                 append updatedContent "\n[join $lines "\n"]"
                 append updatedContent [string range $outputFileContent $insertionEnd end]
@@ -218,10 +315,11 @@ foreach line $lines {
                 error "Insertion point not found in the output file."
             }
 
-            set lines [split $inputFileContent "\n"]
+            set filteredInputContent [merge_unique_signal_lines $outputFileContent $inputFileContent]
+            set lines [split $filteredInputContent "\n"]
             set insertionEnd [string first "\n" $outputFileContent $index]
 
-            if {[string first [join $lines "\n"] [string range $outputFileContent $insertionEnd end]] == -1} {
+            if {$filteredInputContent ne ""} {
                 set updatedContent [string range $outputFileContent 0 $insertionEnd]
                 append updatedContent "\n[join $lines "\n"]"
                 append updatedContent [string range $outputFileContent $insertionEnd end]
@@ -273,7 +371,9 @@ foreach line $lines {
                 # port
                 if {[file exists $topPortFileName]} {
                     set topPortContent [read [open $topPortFileName "r"]]
-                    append topPortContent [read [open $portFileName "r"]]
+                    set childPortContent [read [open $portFileName "r"]]
+                    set uniqueChildPortContent [merge_unique_signal_lines $topPortContent $childPortContent]
+                    append topPortContent $uniqueChildPortContent
 
                     set topPortFile [open $topPortFileName "w"]
                     puts -nonewline $topPortFile $topPortContent
@@ -286,7 +386,9 @@ foreach line $lines {
                 # output
                 if {[file exists $topOutputFileName]} {
                     set topOutputContent [read [open $topOutputFileName "r"]]
-                    append topOutputContent [read [open $outputFileName "r"]]
+                    set childOutputContent [read [open $outputFileName "r"]]
+                    set uniqueChildOutputContent [merge_unique_signal_lines $topOutputContent $childOutputContent]
+                    append topOutputContent $uniqueChildOutputContent
 
                     set topOutputFile [open $topOutputFileName "w"]
                     puts -nonewline $topOutputFile $topOutputContent
