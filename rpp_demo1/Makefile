@@ -53,6 +53,9 @@ check_env:
 		echo "Missing VIVADO launcher: $(VIVADO)"; \
 		exit 1; \
 	fi
+	@if [ "$(RUN_COSIM)" = "1" ] && ! command -v zip >/dev/null 2>&1; then \
+		echo "Warning: RUN_COSIM=1 requested but 'zip' is not installed. Vitis HLS may warn during co-simulation."; \
+	fi
 	@mkdir -p .linux-hls-libs
 	@ln -sf "$(XILINX_ROOT)/Vitis_HLS/2023.1/lnx64/tools/clang-3.9/lib/libtinfo.so.5" ".linux-hls-libs/libtinfo.so.5"
 

@@ -4,7 +4,24 @@ This folder is set up from the RealProbe matrix-multiplication tutorial example:
 
 https://realprobe-doc.readthedocs.io/en/latest/tutorial/ex1.html
 
-What was customized for this machine:
+## Prerequisites
+
+The validated flow for this demo is Linux-only:
+
+- Linux Vitis HLS 2023.1
+- Linux Vivado 2023.1
+- Vivado installed with Zynq-7000 device support for `xc7z020clg400-1`
+
+The default paths in this repo assume:
+
+- Vitis HLS at `/home/htran304/tools/Xilinx/Vitis_HLS/2023.1`
+- Vivado at `/home/htran304/tools/Xilinx/Vivado/2023.1`
+
+If your install lives somewhere else, override `XILINX_ROOT` when you run `make`.
+
+## Repo-Specific Changes
+
+What was customized in this repo:
 
 - `Makefile` points at the repo-local `../realprobe` checkout.
 - `Makefile` uses Linux Vitis HLS 2023.1 from `/home/htran304/tools/Xilinx/Vitis_HLS/2023.1/bin/vitis_hls`.
@@ -14,31 +31,46 @@ What was customized for this machine:
 - `Makefile` defaults `RUN_COSIM=0` on Linux because Vitis HLS 2023.1 co-simulation is not stable in this WSL setup.
 - The shared `realprobe/` scripts were patched so reruns are clean and the generated Vivado flow emits the RapidWright-style DCP outputs.
 
-Run from WSL/Linux in this directory:
+## Setup
+
+1. Open a Linux shell or WSL shell.
+2. Change into this directory:
 
 ```bash
-make realprobe
+cd /path/to/realprobe_plus/rpp_demo1
 ```
 
-If you want to try the Linux co-simulation step anyway:
-
-```bash
-make realprobe RUN_COSIM=1
-```
-
-If your Xilinx install lives somewhere else, you can override the defaults:
+3. If needed, override the Xilinx install root:
 
 ```bash
 make realprobe XILINX_ROOT=/path/to/Xilinx
 ```
 
-Optional baseline flow:
+4. Otherwise, run the validated default flow:
+
+```bash
+make realprobe
+```
+
+## Optional Commands
+
+Try HLS co-simulation too:
+
+```bash
+make realprobe RUN_COSIM=1
+```
+
+If you enable `RUN_COSIM=1`, make sure the `zip` utility is installed and available on `PATH`.
+
+Run the baseline non-RealProbe flow:
 
 ```bash
 make base
 ```
 
-Expected outputs after a successful run:
+## Expected Outputs
+
+After a successful `make realprobe`, this folder will contain:
 
 - `project/`
 - `vivado/`
@@ -46,11 +78,16 @@ Expected outputs after a successful run:
 - `FPGA/design_1.hwh`
 - `FPGA/fpga.ipynb`
 
-Notes:
+It will also copy the RapidWright-style DCPs into `vivado/`:
 
-- The tutorial requires the Tcl file name to stay `hls.tcl`.
-- The variable names `solution_name`, `project_name`, and `target_device` in `hls.tcl` must remain unchanged.
-- A successful `make realprobe` will also copy these DCPs into `vivado/` for the RapidWright reference inserter:
 - `vivado/design_1_wrapper_routed.dcp`
 - `vivado/design_1_realprobe_ip_0_0.dcp`
 - `vivado/design_1_axi_bram_ctrl_0_0.dcp`
+
+## Notes
+
+- The tutorial requires the Tcl file name to stay `hls.tcl`.
+- The variable names `solution_name`, `project_name`, and `target_device` in `hls.tcl` must remain unchanged.
+- The Makefile handles the locale and `LD_LIBRARY_PATH` setup needed by the Linux Xilinx tools in this environment.
+- `RUN_COSIM=1` has been validated with `XSIM` in this setup.
+- The Vivado run still emits some warnings from generated Xilinx IP and PS7 constraints, but the validated flow completes successfully through routed DCP and bitstream generation.

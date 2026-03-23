@@ -41,6 +41,50 @@ All testing has been performed using Vitis HLS 2023.1 and Vivado 2023.1, though 
 [7]: https://docs.amd.com/r/en-US/ug910-vivado-getting-started/Installing-the-Vivado-Design-Suite
 [8]: https://github.com/Xilinx/hls-llvm-project
 
+## Validated Setup
+
+This repository has been validated with a Linux-only flow using:
+
+- Vitis HLS 2023.1 for HLS and RealProbe generation
+- Vivado 2023.1 for block design, implementation, bitstream generation, and DCP export
+- target device `xc7z020clg400-1`
+
+If you are installing Vivado 2023.1, make sure the install includes the Zynq-7000 device family. The demo flow will fail at project creation if that device support is missing.
+
+## Quick Start
+
+1. Install Linux Vitis HLS 2023.1 and Linux Vivado 2023.1.
+2. Confirm these binaries exist, or adjust paths later:
+
+```bash
+/path/to/Xilinx/Vitis_HLS/2023.1/bin/vitis_hls
+/path/to/Xilinx/Vivado/2023.1/bin/vivado
+```
+
+3. Clone this repository:
+
+```bash
+git clone <your-repo-url> realprobe_plus
+cd realprobe_plus
+```
+
+4. Run the validated demo flow:
+
+```bash
+cd rpp_demo1
+make realprobe
+```
+
+5. After a successful run, the demo produces:
+
+- `FPGA/design_1.bit`
+- `FPGA/design_1.hwh`
+- `FPGA/fpga.ipynb`
+- `vivado/design_1_wrapper_routed.dcp`
+- `vivado/design_1_realprobe_ip_0_0.dcp`
+- `vivado/design_1_axi_bram_ctrl_0_0.dcp`
+
+See `rpp_demo1/README.md` for the full demo-specific setup notes.
 
 
 ## Usage
@@ -53,27 +97,34 @@ cd RealProbe
 
 > **Warning**
 >
-> Please note that the name of the tcl script should be hls.tcl, and don't change the variable name inside. For more information, refer examples folder for tcl script examples.
+> The Tcl file name must remain `hls.tcl`, and the variable names inside it such as `project_name`, `solution_name`, and `target_device` must not be changed.
 
-In your Makefile, specify the path to your RealProbe checkout and the installed Linux Vitis HLS frontend:
-
-```bash
-REALPROBE_PATH := <YOUR/GIT/CLONED/PATH>/realprobe
-HLS_BUILD_PATH := /path/to/Xilinx/Vitis_HLS/2023.1/lnx64/tools/clang-3.9-csynth
-```
-
-Go to your project folder (with C/C++ codes and Vitis_HLS run tcl script) and copy the Makefile from RealProbe.
-
+For a new project, copy the shared Makefile into your HLS project directory and point it at your Linux Xilinx install:
 
 ```bash
-cp /path/to/RealProbe/realprobe/Makefile .
+cp /path/to/realprobe_plus/realprobe/Makefile .
 ```
 
-Then, run RealProbe!
+The main variables to set or override are:
+
+```bash
+XILINX_ROOT=/path/to/Xilinx
+REALPROBE_PATH=/path/to/realprobe_plus/realprobe
+HLS_BUILD_PATH=/path/to/Xilinx/Vitis_HLS/2023.1/lnx64/tools/clang-3.9-csynth
+VITIS_HLS=/path/to/Xilinx/Vitis_HLS/2023.1/bin/vitis_hls
+VIVADO=/path/to/Xilinx/Vivado/2023.1/bin/vivado
+```
+
+Then run:
 
 ```bash
 make realprobe
 ```
+
+Optional:
+
+- `make base` runs the baseline HLS-to-Vivado flow without the RealProbe instrumentation path.
+- `make realprobe RUN_COSIM=1` enables HLS co-simulation. This repository has now been validated with `RUN_COSIM=1` on Linux Vitis HLS 2023.1 using `XSIM`, but it requires the `zip` utility to be installed on the system.
 
 <!---
 All available command-line options can be viewed by running `realprobe --help`.
