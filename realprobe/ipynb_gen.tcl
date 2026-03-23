@@ -41,8 +41,17 @@ foreach signal $signals {
     incr index
 }
 # Define the path to the signals file
-set signals_file "[pwd]/${PRJ_NAME}/${SOL_NAME}/rprobe/apstart_signals.txt"
-set depth_file "[pwd]/${PRJ_NAME}/${SOL_NAME}/rprobe/conservative_tripcount.txt"
+if {[info exists ::IPYNB_SIGNAL_FILE] && $::IPYNB_SIGNAL_FILE ne ""} {
+    set signals_file $::IPYNB_SIGNAL_FILE
+} else {
+    set signals_file "[pwd]/${PRJ_NAME}/${SOL_NAME}/rprobe/apstart_signals.txt"
+}
+
+if {[info exists ::IPYNB_DEPTH_FILE] && $::IPYNB_DEPTH_FILE ne ""} {
+    set depth_file $::IPYNB_DEPTH_FILE
+} else {
+    set depth_file "[pwd]/${PRJ_NAME}/${SOL_NAME}/rprobe/conservative_tripcount.txt"
+}
 
 # ap_signals file read
 set file [open $signals_file r]

@@ -125,6 +125,8 @@ Optional:
 
 - `make base` runs the baseline HLS-to-Vivado flow without the RealProbe instrumentation path.
 - `make realprobe RUN_COSIM=1` enables HLS co-simulation. This repository has now been validated with `RUN_COSIM=1` on Linux Vitis HLS 2023.1 using `XSIM`, but it requires the `zip` utility to be installed on the system.
+- `FPGA/fpga.ipynb` is auto-generated from the HLS register map plus RealProbe recorder metadata. It loads `design_1.bit`, talks to the kernel IP and `axi_bram_ctrl_0`, and includes cells to dump and plot recorder timing data on the board.
+- `make function <name>` now reuses the same notebook generator as the full flow. It filters to the selected function's `ap_start` recorders and keeps the matching recorder depths when that function exposes probeable `ap_start` signals.
 - `rapidwright_realprobe_inserter/` contains a parameterized RapidWright checkpoint inserter for cases where you want to inject RealProbe into existing DCPs instead of rerunning the normal RealProbe HLS flow. Its wrapper now defaults to a 2-stage RapidWright-plus-Vivado path that emits a normal final DCP.
 
 <!---

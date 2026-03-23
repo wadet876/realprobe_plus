@@ -84,6 +84,20 @@ It will also copy the RapidWright-style DCPs into `vivado/`:
 - `vivado/design_1_realprobe_ip_0_0.dcp`
 - `vivado/design_1_axi_bram_ctrl_0_0.dcp`
 
+## Notebook Usage
+
+`FPGA/fpga.ipynb` is generated automatically from the HLS control-register header and the RealProbe recorder metadata.
+
+The notebook is set up to:
+
+- load `design_1.bit` with PYNQ
+- talk to the kernel as `ol.matrixmul_0`
+- read RealProbe timing data through `ol.axi_bram_ctrl_0`
+- dump per-recorder start/end timestamps
+- plot a simple execution timeline
+
+If you run `make function <name>`, the notebook generator now follows that retargeted selection too. It keeps only the selected function's `ap_start` recorders and maps the matching tripcounts into the notebook. If the selected `_under.txt` file has no `ap_start` signals, the retargeted notebook cannot be generated for that selection.
+
 ## Notes
 
 - The tutorial requires the Tcl file name to stay `hls.tcl`.
